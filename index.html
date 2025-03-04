@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词记忆工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #2D2D2D;
+            text-align: center;
+            color: #CCCCCC;
+            background-image: url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 {
+            color: #FFFFFF;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: rgba(54, 54, 54, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .word-container {
+            padding: 20px;
+            background-color: #3D3D3D;
+            border-radius: 5px;
+        }
+        #word {
+            font-size: 48px;
+            font-weight: bold;
+            color: #FFFFFF;
+        }
+        #translation {
+            font-size: 24px;
+            color: #8AB4F8;
+            display: none;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #505050;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 10px; /* 调整按钮间距 */
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #606060;
+        }
+        #congratulationsMessage {
+            display: none;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-top: 20px;
+        }
+        #clearCacheBtn {
+            background-color: #8B0000;
+        }
+        #clearCacheBtn:hover {
+            background-color: #A52A2A;
+        }
+        input[type="file"] {
+            margin-top: 15px;
+            padding: 8px;
+            background-color: #454545;
+            color: #CCCCCC;
+            border-radius: 4px;
+            border: 1px solid #505050;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>单词记忆工具</h1>
+        <div class="word-container">
+            <div id="word">请先上传单词表</div>
+            <div id="translation"></div>
+        </div>
+        <button onclick="showTranslation()">显示翻译</button>
+        <button onclick="nextWord()">下一个单词</button>
+        <button id="clearCacheBtn" onclick="clearCache()">清除缓存</button>
+        <input type="file" id="csvFileInput" accept=".csv">
+        <div id="congratulationsMessage">恭喜！所有单词均已记忆完成</div>
+    </div>
+
+    <script>
+        let wordList = [];
+        let currentIndex = 0;
+
+        function showWord() {
+            const wordElement = document.getElementById('word');
+            const translationElement = document.getElementById('translation');
+
+            if (wordList.length > 0) {
+                wordElement.textContent = wordList[currentIndex].word;
+                translationElement.textContent = '';
+            } else {
+                wordElement.textContent = '请先上传单词表';
+                translationElement.textContent = '';
+            }
+        }
+
+        function showTranslation() {
+            if (wordList.length > 0) {
+                document.getElementById('translation').textContent = wordList[currentIndex].translation;
+                document.getElementById('translation').style.display = "block";
+            }
+        }
+
+        function nextWord() {
+            if (wordList.length > 0) {
+                currentIndex = (currentIndex + 1) % wordList.length;
+                showWord();
+            }
+        }
+
+        function clearCache() {
+            localStorage.removeItem('wordList');
+            wordList = [];
+            currentIndex = 0;
+            showWord();
+            document.getElementById("congratulationsMessage").style.display = "none";
+        }
+
+        function saveWordList() {
+            localStorage.setItem('wordList', JSON.stringify(wordList));
+        }
+
+        function loadWordList() {
+            const savedWordList = localStorage.getItem('wordList');
+            if (savedWordList) {
+                wordList = JSON.parse(savedWordList);
+            }
+        }
+
+        function loadWordsFromCSV(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const contents = e.target.result;
+                const lines = contents.split('\n');
+
+                wordList = lines.filter(line => line.trim() !== '').map(line => {
+                    const [word, translation] = line.split(',');
+                    return { word: word.trim(), translation: translation.trim() };
+                });
+
+                saveWordList();
+                showWord();
+            };
+
+            reader.readAsText(file);
+        }
+
+        function init() {
+            loadWordList();
+            showWord();
+            document.getElementById('csvFileInput').addEventListener('change', loadWordsFromCSV);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
