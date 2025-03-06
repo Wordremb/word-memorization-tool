@@ -152,4 +152,79 @@
         }
 
         function saveWordList() {
-          
+            localStorage.setItem('wordList', JSON.stringify(wordList));
+        }
+
+        function loadWordList() {
+            const savedWordList = localStorage.getItem('wordList');
+            if (savedWordList) {
+                wordList = JSON.parse(savedWordList);
+            }
+        }
+
+        function loadWordsFromCSV(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const contents = e.target.result;
+                const lines = contents.split('\n');
+
+                // 初始化每个单词的 studyTime 属性为 0
+                wordList = lines.filter(line => line.trim() !== '').map(line => {
+                    const [word, translation] = line.split(',');
+                    return { word: word.trim(), translation: translation.trim(), studyTime: 0 };
+                });
+
+                saveWordList();
+                showWord();
+                wordStartTime = Date.now();
+            };
+
+            reader.readAsText(file);
+        }
+
+        function downloadStudyData() {
+            if (wordList.length > 0) {
+                // 更新当前单词的学习时间
+                let now = Date.now();
+                let elapsed = now - wordStartTime;
+                if (!wordList[currentIndex].studyTime) {
+                    wordList[currentIndex].studyTime = 0;
+                }
+                wordList[currentIndex].studyTime += elapsed;
+                wordStartTime = now;
+            }
+            let totalStudyTime = 0;
+            let csvContent = "单词,学习时间(ms)\n";
+            wordList.forEach(wordObj => {
+                totalStudyTime += wordObj.studyTime || 0;
+                csvContent += wordObj.word + "," + (wordObj.studyTime || 0) + "\n";
+            });
+            csvContent += "\n总学习单词数," + wordList.length + "\n";
+            csvContent += "总学习时间(ms)," + totalStudyTime + "\n";
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '学习数据.csv';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function init() {
+            loadWordList();
+            showWord();
+            if (wordList.length > 0) {
+                wordStartTime = Date.now();
+            }
+            document.getElementById('csvFileInput').addEventListener('change', loadWordsFromCSV);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
