@@ -94,6 +94,7 @@
         <button onclick="showTranslation()">显示翻译</button>
         <button onclick="nextWord()">下一个单词</button>
         <button id="clearCacheBtn" onclick="clearCache()">清除缓存</button>
+        <button onclick="downloadStudyData()">下载学习数据</button>
         <input type="file" id="csvFileInput" accept=".csv">
         <div id="congratulationsMessage">恭喜！所有单词均已记忆完成</div>
     </div>
@@ -101,6 +102,7 @@
     <script>
         let wordList = [];
         let currentIndex = 0;
+        let wordStartTime = Date.now();
 
         function showWord() {
             const wordElement = document.getElementById('word');
@@ -109,6 +111,7 @@
             if (wordList.length > 0) {
                 wordElement.textContent = wordList[currentIndex].word;
                 translationElement.textContent = '';
+                translationElement.style.display = "none";
             } else {
                 wordElement.textContent = '请先上传单词表';
                 translationElement.textContent = '';
@@ -124,8 +127,19 @@
 
         function nextWord() {
             if (wordList.length > 0) {
+                // 计算当前单词学习时间（单位：毫秒）
+                let now = Date.now();
+                let elapsed = now - wordStartTime;
+                if (!wordList[currentIndex].studyTime) {
+                    wordList[currentIndex].studyTime = 0;
+                }
+                wordList[currentIndex].studyTime += elapsed;
+
+                // 切换到下一个单词
                 currentIndex = (currentIndex + 1) % wordList.length;
                 showWord();
+                wordStartTime = Date.now();
+                saveWordList();
             }
         }
 
@@ -138,43 +152,4 @@
         }
 
         function saveWordList() {
-            localStorage.setItem('wordList', JSON.stringify(wordList));
-        }
-
-        function loadWordList() {
-            const savedWordList = localStorage.getItem('wordList');
-            if (savedWordList) {
-                wordList = JSON.parse(savedWordList);
-            }
-        }
-
-        function loadWordsFromCSV(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-
-            reader.onload = function (e) {
-                const contents = e.target.result;
-                const lines = contents.split('\n');
-
-                wordList = lines.filter(line => line.trim() !== '').map(line => {
-                    const [word, translation] = line.split(',');
-                    return { word: word.trim(), translation: translation.trim() };
-                });
-
-                saveWordList();
-                showWord();
-            };
-
-            reader.readAsText(file);
-        }
-
-        function init() {
-            loadWordList();
-            showWord();
-            document.getElementById('csvFileInput').addEventListener('change', loadWordsFromCSV);
-        }
-
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
-</body>
-</html>
+          
